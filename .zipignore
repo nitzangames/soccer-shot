@@ -1,0 +1,15 @@
+.git/*
+.superpowers/*
+docs/*
+tests/*
+error.log
+dev-server.js
+screenshot.js
+screenshot-*.png
+ss-*.png
+thumb-*.png
+mockups.html
+thumb-mockups.html
+gen-thumbnail.js
+CLAUDE.md
+.zipignore

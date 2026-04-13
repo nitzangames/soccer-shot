@@ -1,0 +1,355 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Player mockups</title>
+  <style>
+    body {
+      margin: 0; padding: 24px;
+      background: #0b1a0b;
+      color: #eee;
+      font-family: -apple-system, system-ui, sans-serif;
+    }
+    h1 { font-weight: 800; letter-spacing: 0.02em; margin: 0 0 20px; }
+    p.sub { margin: 0 0 24px; opacity: 0.7; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      max-width: 980px;
+    }
+    .card {
+      background: #143314;
+      border: 2px solid #2a5a2a;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .card h2 { margin: 0 0 8px; font-size: 18px; }
+    .card p { margin: 0 0 12px; font-size: 13px; opacity: 0.75; line-height: 1.4; }
+    canvas { display: block; width: 100%; border-radius: 8px; background: #5bc15b; }
+    .tag {
+      display: inline-block;
+      background: #2a5a2a;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Soccer Shot — Player mockups</h1>
+  <p class="sub">Four variations drawn at game scale, on the same foul-line background as the real game. Tell me which letter you want and I'll wire it in.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2><span class="tag">A</span> Top-down aerial</h2>
+      <p>Bird's-eye view: head + jersey shoulders + small arms. Reads cleanly at a glance, matches the flat top-down field.</p>
+      <canvas id="cA" width="400" height="480"></canvas>
+    </div>
+    <div class="card">
+      <h2><span class="tag">B</span> Back-view classic</h2>
+      <p>You see the player from behind — hair, jersey with number, shorts, legs with cleats. Feels like watching them take the shot.</p>
+      <canvas id="cB" width="400" height="480"></canvas>
+    </div>
+    <div class="card">
+      <h2><span class="tag">C</span> Chibi mascot</h2>
+      <p>Big round head, tiny body, friendly expression. Cartoon vibe, lots of personality, pops on the field.</p>
+      <canvas id="cC" width="400" height="480"></canvas>
+    </div>
+    <div class="card">
+      <h2><span class="tag">D</span> Running silhouette</h2>
+      <p>Dynamic side-on running pose, flipped based on travel direction. Reads as motion — feels athletic.</p>
+      <canvas id="cD" width="400" height="480"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // Each canvas shows the player at roughly the same in-game scale against
+    // the same foul-line-with-penalty-arc background.
+    function drawBackground(ctx, w, h) {
+      // Grass + stripes
+      ctx.fillStyle = '#5bc15b';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(0,0,0,0.06)';
+      for (let y = 0; y < h; y += 70) ctx.fillRect(0, y, w, 35);
+      // Foul line (horizontal)
+      const foulY = h * 0.35;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(12, foulY);
+      ctx.lineTo(w - 12, foulY);
+      ctx.stroke();
+      // Penalty arc
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(w / 2, foulY, 70, Math.PI, 0, false);
+      ctx.stroke();
+      // Penalty spot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(w / 2, foulY - 35, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      return foulY;
+    }
+
+    // ── A: Top-down aerial view ──────────────────────────────────────────────
+    function drawA(ctx, w, h) {
+      const foulY = drawBackground(ctx, w, h);
+      const cx = w / 2;
+      const cy = foulY + 64; // player center below foul line
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 38, 46, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Arms (oval left/right)
+      ctx.fillStyle = '#ffd9b8';
+      ctx.beginPath(); ctx.ellipse(cx - 44, cy + 4, 12, 22, -0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 44, cy + 4, 12, 22, 0.3, 0, Math.PI * 2); ctx.fill();
+      // Jersey torso (rounded rect)
+      ctx.fillStyle = '#e63946';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 6, 38, 34, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Shoulder highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.beginPath(); ctx.ellipse(cx - 10, cy - 6, 22, 8, -0.2, 0, Math.PI * 2); ctx.fill();
+      // Collar line
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy - 14, 14, 0.2, Math.PI - 0.2, false); ctx.stroke();
+      // Head
+      const hr = 20;
+      ctx.fillStyle = '#f0c49a';
+      ctx.beginPath(); ctx.arc(cx, cy - 22, hr, 0, Math.PI * 2); ctx.fill();
+      // Hair (top crescent)
+      ctx.fillStyle = '#5a3a1a';
+      ctx.beginPath(); ctx.arc(cx, cy - 22, hr, Math.PI + 0.2, -0.2, false); ctx.fill();
+      // Outline
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy - 22, hr, 0, Math.PI * 2); ctx.stroke();
+      // Subtle body outline
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 6, 38, 34, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // ── B: Back-view classic ────────────────────────────────────────────────
+    function drawB(ctx, w, h) {
+      const foulY = drawBackground(ctx, w, h);
+      const cx = w / 2;
+      const baseY = foulY + 110;
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath();
+      ctx.ellipse(cx, baseY + 6, 38, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Legs
+      ctx.fillStyle = '#f0c49a';
+      ctx.fillRect(cx - 18, baseY - 28, 14, 28);
+      ctx.fillRect(cx + 4, baseY - 28, 14, 28);
+      // Cleats
+      ctx.fillStyle = '#111';
+      ctx.fillRect(cx - 20, baseY - 6, 18, 8);
+      ctx.fillRect(cx + 2, baseY - 6, 18, 8);
+      // Shorts
+      ctx.fillStyle = '#111';
+      ctx.fillRect(cx - 24, baseY - 48, 48, 24);
+      // Jersey (red with white stripe)
+      ctx.fillStyle = '#e63946';
+      ctx.fillRect(cx - 28, baseY - 92, 56, 46);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 4, baseY - 92, 8, 46);
+      // Arms
+      ctx.fillStyle = '#f0c49a';
+      ctx.fillRect(cx - 38, baseY - 88, 10, 36);
+      ctx.fillRect(cx + 28, baseY - 88, 10, 36);
+      // Sleeves (red)
+      ctx.fillStyle = '#e63946';
+      ctx.fillRect(cx - 38, baseY - 92, 10, 10);
+      ctx.fillRect(cx + 28, baseY - 92, 10, 10);
+      // Number
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('9', cx + 14, baseY - 68);
+      // Head
+      ctx.fillStyle = '#f0c49a';
+      ctx.beginPath();
+      ctx.arc(cx, baseY - 110, 18, 0, Math.PI * 2);
+      ctx.fill();
+      // Hair (from behind)
+      ctx.fillStyle = '#3a2a1a';
+      ctx.beginPath();
+      ctx.arc(cx, baseY - 113, 18, Math.PI, 0, false);
+      ctx.fill();
+      ctx.fillRect(cx - 18, baseY - 113, 36, 8);
+      // Outline
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx - 28, baseY - 92, 56, 46);
+      ctx.strokeRect(cx - 24, baseY - 48, 48, 24);
+      ctx.beginPath(); ctx.arc(cx, baseY - 110, 18, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // ── C: Chibi mascot ──────────────────────────────────────────────────────
+    function drawC(ctx, w, h) {
+      const foulY = drawBackground(ctx, w, h);
+      const cx = w / 2;
+      const cy = foulY + 70;
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 62, 38, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Tiny legs
+      ctx.fillStyle = '#111';
+      ctx.fillRect(cx - 14, cy + 40, 10, 18);
+      ctx.fillRect(cx + 4, cy + 40, 10, 18);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(cx - 14, cy + 54, 10, 4);
+      ctx.fillRect(cx + 4, cy + 54, 10, 4);
+      // Body (jersey — yellow + black stripes)
+      ctx.fillStyle = '#ffcc00';
+      ctx.beginPath();
+      ctx.roundRect(cx - 26, cy + 16, 52, 28, 10);
+      ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.fillRect(cx - 26, cy + 22, 52, 5);
+      ctx.fillRect(cx - 26, cy + 33, 52, 5);
+      // Big head
+      const hr = 36;
+      // Head shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.arc(cx + 2, cy + 2, hr, 0, Math.PI * 2); ctx.fill();
+      // Head
+      ctx.fillStyle = '#f7d2a8';
+      ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI * 2); ctx.fill();
+      // Hair
+      ctx.fillStyle = '#3a2a1a';
+      ctx.beginPath(); ctx.arc(cx, cy - 4, hr, Math.PI + 0.1, -0.1, false); ctx.fill();
+      // Eyes
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.arc(cx - 11, cy + 4, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 11, cy + 4, 4, 0, Math.PI * 2); ctx.fill();
+      // Eye shine
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(cx - 10, cy + 3, 1.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 12, cy + 3, 1.4, 0, Math.PI * 2); ctx.fill();
+      // Smile
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy + 12, 8, 0.1, Math.PI - 0.1, false); ctx.stroke();
+      // Cheek blush
+      ctx.fillStyle = 'rgba(255, 120, 120, 0.45)';
+      ctx.beginPath(); ctx.arc(cx - 20, cy + 12, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 20, cy + 12, 5, 0, Math.PI * 2); ctx.fill();
+      // Head outline
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // ── D: Running silhouette ───────────────────────────────────────────────
+    function drawD(ctx, w, h) {
+      const foulY = drawBackground(ctx, w, h);
+      const cx = w / 2;
+      const baseY = foulY + 120;
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(cx, baseY + 4, 40, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Side-on runner facing right
+      // Back leg (pushed off)
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - 4, baseY - 46);
+      ctx.lineTo(cx - 20, baseY - 20);
+      ctx.lineTo(cx - 28, baseY);
+      ctx.stroke();
+      // Front leg (lifted, bent)
+      ctx.beginPath();
+      ctx.moveTo(cx + 2, baseY - 46);
+      ctx.lineTo(cx + 22, baseY - 32);
+      ctx.lineTo(cx + 16, baseY - 2);
+      ctx.stroke();
+      // Cleats
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(cx - 38, baseY - 4, 14, 6);
+      ctx.fillRect(cx + 10, baseY - 6, 14, 6);
+      // Torso (blue jersey, angled forward)
+      ctx.save();
+      ctx.translate(cx, baseY - 60);
+      ctx.rotate(-0.25);
+      ctx.fillStyle = '#1c6ef5';
+      ctx.beginPath();
+      ctx.roundRect(-18, -22, 36, 44, 8);
+      ctx.fill();
+      // Stripe
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-4, -22, 8, 44);
+      ctx.strokeStyle = '#0a4db0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-18, -22, 36, 44, 8);
+      ctx.stroke();
+      ctx.restore();
+      // Arms (swinging)
+      ctx.strokeStyle = '#f0c49a';
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(cx - 14, baseY - 66);
+      ctx.lineTo(cx - 28, baseY - 46);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + 14, baseY - 66);
+      ctx.lineTo(cx + 26, baseY - 80);
+      ctx.stroke();
+      // Head
+      ctx.fillStyle = '#f0c49a';
+      ctx.beginPath();
+      ctx.arc(cx + 6, baseY - 94, 16, 0, Math.PI * 2);
+      ctx.fill();
+      // Hair
+      ctx.fillStyle = '#3a2a1a';
+      ctx.beginPath();
+      ctx.arc(cx + 6, baseY - 96, 16, Math.PI + 0.2, -0.3, false);
+      ctx.fill();
+      // Face (simple)
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.arc(cx + 12, baseY - 93, 2, 0, Math.PI * 2); ctx.fill();
+      // Head outline
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx + 6, baseY - 94, 16, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // Fallback for roundRect on older canvases
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+      };
+    }
+
+    drawA(document.getElementById('cA').getContext('2d'), 400, 480);
+    drawB(document.getElementById('cB').getContext('2d'), 400, 480);
+    drawC(document.getElementById('cC').getContext('2d'), 400, 480);
+    drawD(document.getElementById('cD').getContext('2d'), 400, 480);
+  </script>
+</body>
+</html>
