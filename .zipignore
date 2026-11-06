@@ -15,3 +15,5 @@ CLAUDE.md
 .zipignore
 dist/*
 build-harmony.sh
+harmony/*
+gen-harmony-art.js
