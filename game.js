@@ -1,7 +1,7 @@
 // Soccer Shot — tap to shoot a ball into 5 goals while the player slides.
 // Single-file canvas game for play.nitzan.games.
 
-const VERSION = 'v0.4.0';
+const VERSION = 'v0.4.1';
 
 // ── Canvas ──────────────────────────────────────────────────────────────────
 const CANVAS_W = 1080;
@@ -886,6 +886,23 @@ if (hasSdk()) {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) pause(); else resume();
 });
+
+// Screenshot mode: auto-start gameplay with some visual activity when loaded
+// with ?screenshot=1 (via PlaySDK.screenshotMode or URL fallback).
+const screenshotMode =
+  (typeof window !== 'undefined' && window.PlaySDK && window.PlaySDK.screenshotMode) ||
+  (typeof location !== 'undefined' && new URLSearchParams(location.search).get('screenshot') === '1');
+if (screenshotMode) {
+  startGame();
+  game.score = 12;
+  game.consecutive = 8;
+  // Spawn a ball ~150ms before each expected capture time so every screenshot
+  // catches a ball mid-flight. Offsets must stay in sync with screenshot.js.
+  const captureOffsetsMs = [800, 1800, 2800, 4000, 5500];
+  captureOffsetsMs.forEach((t) => {
+    setTimeout(() => { if (game.state === STATE_PLAYING) spawnBall(game.playerX); }, Math.max(0, t - 150));
+  });
+}
 
 // Kick off
 rafId = requestAnimationFrame(loop);
