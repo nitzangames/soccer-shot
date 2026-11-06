@@ -1,7 +1,7 @@
 // Soccer Shot — tap to shoot a ball into 5 goals while the player slides.
 // Single-file canvas game for play.nitzan.games.
 
-const VERSION = 'v0.5.0';
+const VERSION = 'v0.5.1';
 
 // ── Canvas ──────────────────────────────────────────────────────────────────
 const CANVAS_W = 1080;
@@ -154,18 +154,57 @@ const game = {
   walkPhase: 0,     // advances with horizontal movement, drives leg/arm cycle
 };
 
-// Persisted best score
-try {
-  const saved = parseInt(localStorage.getItem('soccerShot.best') || '0', 10);
-  if (!Number.isNaN(saved)) game.best = saved;
-} catch (_) {}
+// Persisted best score. On Harmony the key includes the player's accountId so
+// each player on a device keeps their own best.
+let bestKey = 'soccerShot.best';
+function loadBest() {
+  try {
+    const saved = parseInt(localStorage.getItem(bestKey) || '0', 10);
+    return Number.isNaN(saved) ? 0 : saved;
+  } catch (_) {
+    return 0;
+  }
+}
+game.best = loadBest();
 
 function saveBest() {
-  try { localStorage.setItem('soccerShot.best', String(game.best)); } catch (_) {}
+  try { localStorage.setItem(bestKey, String(game.best)); } catch (_) {}
 }
 
 // Leaderboard: null=loading, []=empty, [{rank,name,value,isMe}...]
 let leaderboard = null;
+
+// ── Harmony (playharmony.ai) ────────────────────────────────────────────────
+// Only the Harmony build (build-harmony.sh) loads Harmony's loader, which
+// defines window.PlayHarmony. Everywhere else this section is inert.
+// Harmony has no leaderboard, so that card is replaced by the player's name.
+const onHarmony = typeof window !== 'undefined' && !!window.PlayHarmony;
+let harmony = null;        // SDK handle once attached
+let harmonyName = null;    // display name of the signed-in player or guest
+
+function applyHarmonySession(session) {
+  if (session && (session.kind === 'account' || session.kind === 'guest')) {
+    harmonyName = session.displayName;
+    bestKey = 'soccerShot.best:' + session.accountId;
+  } else {
+    harmonyName = null;
+    bestKey = 'soccerShot.best';
+  }
+  game.best = loadBest();
+}
+
+function attachHarmony() {
+  window.PlayHarmony.attach({ container: canvas }).then((handle) => {
+    harmony = handle;
+    handle.on('open', pause);
+    handle.on('close', resume);
+    handle.auth.onSessionChanged(applyHarmonySession);
+    return handle.auth.getSession().then(applyHarmonySession);
+  }).catch((error) => {
+    // The game plays on without Harmony's features.
+    console.warn('Harmony is not available', error);
+  });
+}
 
 // ── Combo helpers ───────────────────────────────────────────────────────────
 function comboMultiplier(c) {
@@ -397,6 +436,7 @@ canvas.addEventListener('pointerdown', (e) => {
 const SHOOT_KEYS = new Set([' ', 'Spacebar', 'Enter', 'ArrowUp', 'w', 'W']);
 window.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (harmony && harmony.isOpen()) return;
   if (!SHOOT_KEYS.has(e.key)) return;
   e.preventDefault();
   if (e.repeat) return;
@@ -1144,8 +1184,21 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   outlinedText('BEST ' + game.best, cx, 1230, 52, WHITE, NAVY, 10);
 
-  drawLeaderboard(1310, 5);
+  if (onHarmony) drawPlayerName(1330);
+  else drawLeaderboard(1310, 5);
   drawVersion('center');
+}
+
+// Harmony: who is playing. The name comes from Harmony, so it is only ever
+// drawn with fillText (plain text).
+function drawPlayerName(y) {
+  if (!harmonyName) return;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = font(36);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fillText('PLAYING AS', CANVAS_W / 2, y);
+  outlinedText(harmonyName, CANVAS_W / 2, y + 60, 56, WHITE, NAVY, 10);
 }
 
 function drawLeaderboard(topY, maxRows) {
@@ -1229,7 +1282,8 @@ function drawGameOver() {
     outlinedText('BEST ' + game.best, cx, 880, 52, YELLOW, NAVY, 10);
   }
 
-  drawLeaderboard(980, 6);
+  if (onHarmony) drawPlayerName(1010);
+  else drawLeaderboard(980, 6);
 
   if (age > 0.6) drawPill(cx, 1700, PROMPT_CONTINUE, 48, WHITE, NAVY, 1 + 0.04 * Math.sin(age * 5));
 }
@@ -1299,6 +1353,7 @@ function pause() {
 
 function resume() {
   if (!paused) return;
+  if (harmony && harmony.isOpen()) return; // stay paused under the overlay
   paused = false;
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
   lastT = performance.now();
@@ -1350,5 +1405,9 @@ if (screenshotMode) {
   screenshotNext = 0;
 }
 
-// Kick off
-rafId = requestAnimationFrame(loop);
+// Kick off. On Harmony, a sign-in window returning to this page only finishes
+// sign-in; it must not start the game.
+if (!(onHarmony && window.__MANTICORE_AUTH_RETURN__)) {
+  rafId = requestAnimationFrame(loop);
+  if (onHarmony) attachHarmony();
+}

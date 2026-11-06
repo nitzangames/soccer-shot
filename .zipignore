@@ -13,3 +13,5 @@ thumb-mockups.html
 gen-thumbnail.js
 CLAUDE.md
 .zipignore
+dist/*
+build-harmony.sh
