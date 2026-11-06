@@ -52,3 +52,14 @@ The script is for local verification only. It is not deployed (already in `.zipi
   won't produce SFX in screenshot mode. That's fine — screenshots are silent.
 - **Version bump.** Per `GAME_DEV_NOTES.md`, bump `VERSION` since this is a
   user-visible change to init behavior.
+
+## Update (2026-11-06)
+
+Fixed-time `setTimeout` kicks sometimes landed between goals, so captures
+showed misses and a reset streak. Kicks are now driven from the game loop:
+before each capture offset there is a window (350 ms → 80 ms before the
+capture) and the kick fires only while the striker is within 50 px of a goal
+centre. Every capture gets a ball that is in flight or has just scored.
+`game.consecutive` is seeded at 9, so the first goal crosses into 2x and the
+goals are on fire for the remaining captures (still not over the threshold at
+load).

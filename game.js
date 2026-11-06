@@ -1283,6 +1283,7 @@ function loop(t) {
   } else {
     game.overScreenAge = 0;
   }
+  updateScreenshotKicks();
   update(dt);
   render();
   rafId = requestAnimationFrame(loop);
@@ -1319,16 +1320,34 @@ document.addEventListener('visibilitychange', () => {
 const screenshotMode =
   (typeof window !== 'undefined' && window.PlaySDK && window.PlaySDK.screenshotMode) ||
   (typeof location !== 'undefined' && new URLSearchParams(location.search).get('screenshot') === '1');
+// Capture offsets (ms after load) must stay in sync with screenshot.js. Before
+// each capture there's a short kick window; the kick fires only while the
+// striker is under a goal, so every frame shows a ball that is in flight or
+// just scored, never a miss.
+const SCREENSHOT_CAPTURES_MS = [800, 1800, 2800, 4000, 5500];
+const SCREENSHOT_KICK_LEAD_MS = 350; // window opens this long before a capture
+const SCREENSHOT_KICK_LATE_MS = 80;  // and closes this long before it
+let screenshotNext = -1;             // index of the next capture, -1 = off
+let screenshotStart = 0;
+function updateScreenshotKicks() {
+  if (screenshotNext < 0 || screenshotNext >= SCREENSHOT_CAPTURES_MS.length) return;
+  if (game.state !== STATE_PLAYING) return;
+  const t = performance.now() - screenshotStart;
+  const capture = SCREENSHOT_CAPTURES_MS[screenshotNext];
+  if (t > capture - SCREENSHOT_KICK_LATE_MS) { screenshotNext++; return; }
+  if (t < capture - SCREENSHOT_KICK_LEAD_MS) return;
+  const gi = goalIndexAt(game.playerX);
+  if (gi >= 0 && Math.abs(game.playerX - GOAL_CENTERS[gi]) < 50) {
+    spawnBall(game.playerX);
+    screenshotNext++;
+  }
+}
 if (screenshotMode) {
   startGame();
   game.score = 12;
-  game.consecutive = 8;
-  // Spawn a ball ~150ms before each expected capture time so every screenshot
-  // catches a ball mid-flight. Offsets must stay in sync with screenshot.js.
-  const captureOffsetsMs = [800, 1800, 2800, 4000, 5500];
-  captureOffsetsMs.forEach((t) => {
-    setTimeout(() => { if (game.state === STATE_PLAYING) spawnBall(game.playerX); }, Math.max(0, t - 150));
-  });
+  game.consecutive = 9; // one goal short of 2x, so the first goal lights the fire
+  screenshotStart = performance.now();
+  screenshotNext = 0;
 }
 
 // Kick off
