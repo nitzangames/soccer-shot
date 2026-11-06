@@ -17,3 +17,4 @@ dist/*
 build-harmony.sh
 harmony/*
 gen-harmony-art.js
+gen-store-shots.js
