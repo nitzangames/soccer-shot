@@ -17,6 +17,7 @@ const MIME = {
   '.jpg':  'image/jpeg',
   '.svg':  'image/svg+xml',
   '.css':  'text/css; charset=utf-8',
+  '.woff2': 'font/woff2',
 };
 
 function startServer() {
