@@ -167,6 +167,22 @@ async function renderAll() {
       ctx.fillRect(0, 0, 1280, 720);
       logo(340, 400, 0.58);
     }),
+    // Square card: the wide scene scaled to fill the height, cropped around
+    // the striker and goal 3, with the title over a darkened lower band.
+    'thumb-square': shot(1024, 1024, () => {
+      const s = 1024 / 810;
+      ctx.save();
+      ctx.translate(512 - 820 * s, 0);
+      ctx.scale(s, s);
+      scene(1440, 810);
+      ctx.restore();
+      const g = ctx.createLinearGradient(0, 380, 0, 1024);
+      g.addColorStop(0, 'rgba(22,29,69,0)');
+      g.addColorStop(1, 'rgba(22,29,69,0.7)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 1024, 1024);
+      logo(340, 770, 0.54);
+    }),
   };
 }
 
