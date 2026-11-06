@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the playharmony.ai upload.
 #
-#   ./build-harmony.sh          → dist/soccer-shot-harmony.zip (real Harmony loader)
+#   ./build-harmony.sh          → harmony/soccer-shot-harmony.zip (real Harmony loader)
 #   ./build-harmony.sh --fake   → dist/harmony-fake/ (Harmony's test stand-in, for local testing)
 #
 # Same game files as nitzan.games; only index.html differs: Harmony's loader goes
@@ -37,9 +37,11 @@ LOADER="$LOADER" perl -0pi -e '
 ' "$OUT/index.html"
 
 if [[ "$OUT" == "dist/harmony" ]]; then
-  rm -f dist/soccer-shot-harmony.zip
-  (cd "$OUT" && zip -qr ../soccer-shot-harmony.zip .)
-  echo "Built dist/soccer-shot-harmony.zip ($(du -h dist/soccer-shot-harmony.zip | cut -f1))"
+  ZIP="$PWD/harmony/soccer-shot-harmony.zip"
+  mkdir -p harmony
+  rm -f "$ZIP"
+  (cd "$OUT" && zip -qr "$ZIP" .)
+  echo "Built $ZIP ($(du -h "$ZIP" | cut -f1))"
 else
   echo "Built $OUT/ (fake Harmony, for local testing only)"
 fi
