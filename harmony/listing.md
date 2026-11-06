@@ -17,6 +17,11 @@ One touch, quick matches, and a high score to beat.
 - Mobile: tap anywhere to shoot
 - Desktop: Space, Enter, W or Up Arrow to shoot
 
+## Genre (Harmony, in order — first is main)
+1. Sports
+2. Arcade
+3. Action
+
 ## Tags
 sports, arcade, one-touch, soccer, casual
 
