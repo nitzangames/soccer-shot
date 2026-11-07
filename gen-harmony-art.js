@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // Render the playharmony.ai listing art with the game's own drawing code:
-//   harmony/banner.png  1440x810   hero art, no text (Harmony overlays the logo on the left)
-//   harmony/logo.png    1024x1024  transparent title wordmark
-//   harmony/thumb.png   1280x720   card thumbnail: scene + title
+//   harmony/banner.png           3840x2160  banner background art, no text (Harmony puts the logo on the left)
+//   harmony/banner-portrait.png  1440x2560  optional mobile banner, no text, subject in the upper half
+//   harmony/logo.png             1024x1024  transparent title logo, cropped to <=10px from the edge
+//   harmony/thumb.png            1280x720   16:9 card thumbnail: scene + title
+//   harmony/thumb-square.png     1024x1024  optional square thumbnail: scene + title
+// Specs: JSGames/Harmony/README.md (taken from Harmony's upload form).
 // Same technique as gen-thumbnail.js: inline game.js with its helpers exposed
 // on window.__ss, pause the loop, compose. Dev-only: listed in .zipignore.
 
@@ -155,9 +158,62 @@ async function renderAll() {
     return cv.toDataURL('image/png');
   };
 
+  // Title logo trimmed to its painted pixels, then scaled so its longer side
+  // sits 8px from the edges (Harmony allows at most 10px of empty margin).
+  function tightLogo(size) {
+    cv.width = 2048;
+    cv.height = 2048;
+    ctx.clearRect(0, 0, 2048, 2048);
+    logo(1024, 1100, 1.6);
+    const px = ctx.getImageData(0, 0, 2048, 2048).data;
+    let x0 = 2048, y0 = 2048, x1 = -1, y1 = -1;
+    for (let y = 0; y < 2048; y++) {
+      for (let x = 0; x < 2048; x++) {
+        if (px[(y * 2048 + x) * 4 + 3] > 8) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+    }
+    const src = document.createElement('canvas');
+    src.width = x1 - x0 + 1;
+    src.height = y1 - y0 + 1;
+    src.getContext('2d').drawImage(cv, x0, y0, src.width, src.height, 0, 0, src.width, src.height);
+    const margin = 8;
+    const k = (size - margin * 2) / Math.max(src.width, src.height);
+    const w = src.width * k;
+    const h = src.height * k;
+    cv.width = size;
+    cv.height = size;
+    ctx.clearRect(0, 0, size, size);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, (size - w) / 2, (size - h) / 2, w, h);
+    return cv.toDataURL('image/png');
+  }
+
   return {
-    banner: shot(1440, 810, () => scene(1440, 810)),
-    logo: shot(1024, 1024, () => logo(512, 560, 1)),
+    banner: shot(3840, 2160, () => scene(3840, 2160)),
+    // Phones: the wide scene fills the top, cropped around the striker and
+    // goal 3; the lower part (under Harmony's title and buttons) fades to navy.
+    'banner-portrait': shot(1440, 2560, () => {
+      const s = 1600 / 810;
+      ctx.fillStyle = S.GRASS;
+      ctx.fillRect(0, 0, 1440, 2560);
+      ctx.save();
+      ctx.translate(720 - 900 * s, 0);
+      ctx.scale(s, s);
+      scene(1440, 810);
+      ctx.restore();
+      const g = ctx.createLinearGradient(0, 1350, 0, 2560);
+      g.addColorStop(0, 'rgba(22,29,69,0)');
+      g.addColorStop(0.35, 'rgba(22,29,69,0.75)');
+      g.addColorStop(1, 'rgba(22,29,69,1)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 1350, 1440, 1210);
+    }),
+    logo: tightLogo(1024),
     thumb: shot(1280, 720, () => {
       scene(1280, 720);
       const g = ctx.createLinearGradient(0, 0, 760, 0);
